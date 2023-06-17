@@ -2,10 +2,17 @@ import { IoClose } from "react-icons/io5";
 import Login from "./Login";
 import SignUp from "./SignUp";
 import ResetPassword from "./ResetPassword";
+import { useRecoilValue, useSetRecoilState } from "recoil";
+import { authModalState } from "@/atoms/authModalAtom";
 
-interface AuthModalOverlayProps {}
+export default function AuthModalOverlay() {
+	const authModal = useRecoilValue(authModalState);
+	const setAuthModalState = useSetRecoilState(authModalState);
 
-export default function AuthModalOverlay({}: AuthModalOverlayProps) {
+	const handleClick = () => {
+		setAuthModalState((prev) => ({ ...prev, isOpen: false }));
+	};
+
 	return (
 		<>
 			<div className="absolute top-0 left-0 w-full h-full flex items-center justify-center bg-black bg-opacity-60" />
@@ -17,14 +24,19 @@ export default function AuthModalOverlay({}: AuthModalOverlayProps) {
 							<button
 								type="button"
 								className="bg-transparent rounded-lg text-sm p-1.5 ml-auto inline-flex items-center hover:bg-gray-800 hover:text-white text-white"
+								onClick={handleClick}
 							>
 								<IoClose className="h-5 w-5" />
 							</button>
 						</div>
 
-						{/* <Login /> */}
-						{/* <SignUp /> */}
-						{/* <ResetPassword /> */}
+						{authModal.type === "login" ? (
+							<Login />
+						) : authModal.type === "register" ? (
+							<SignUp />
+						) : (
+							<ResetPassword />
+						)}
 					</div>
 				</div>
 			</div>
