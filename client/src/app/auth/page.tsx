@@ -1,10 +1,14 @@
+"use client";
+
 import AuthModalOverlay from "@/components/Modals/AuthModalOverlay";
-import { Navbar } from "@/components/Navbar";
 import Image from "next/image";
+import { Navbar } from "@/components/Navbar";
+import { useRecoilValue } from "recoil";
+import { authModalState } from "@/atoms/authModalAtom";
 
-interface AuthPageProps {}
+export default function AuthPage() {
+	const authModal = useRecoilValue(authModalState);
 
-export default function AuthPage({}: AuthPageProps) {
 	return (
 		<div className="bg-gradient-to-b from-gray-600 to-black h-screen relative">
 			<div className="max-w-7xl mx-auto">
@@ -19,6 +23,8 @@ export default function AuthPage({}: AuthPageProps) {
 						height={300}
 					/>
 				</div>
+
+				{authModal.isOpen && <AuthModalOverlay />}
 			</div>
 		</div>
 	);

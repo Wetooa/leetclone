@@ -24,7 +24,7 @@ export default function AuthModalOverlay({}: AuthModalOverlayProps) {
 
 						{/* <Login /> */}
 						{/* <SignUp /> */}
-						<ResetPassword />
+						{/* <ResetPassword /> */}
 					</div>
 				</div>
 			</div>
