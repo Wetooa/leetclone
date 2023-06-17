@@ -4,18 +4,18 @@ import SignUp from "./SignUp";
 import ResetPassword from "./ResetPassword";
 import { useRecoilValue, useSetRecoilState } from "recoil";
 import { authModalState } from "@/atoms/authModalAtom";
+import { useEffect } from "react";
 
 export default function AuthModalOverlay() {
 	const authModal = useRecoilValue(authModalState);
-	const setAuthModalState = useSetRecoilState(authModalState);
-
-	const handleClick = () => {
-		setAuthModalState((prev) => ({ ...prev, isOpen: false }));
-	};
+	const closeModal = useCloseModal();
 
 	return (
 		<>
-			<div className="absolute top-0 left-0 w-full h-full flex items-center justify-center bg-black bg-opacity-60" />
+			<div
+				className="absolute top-0 left-0 w-full h-full flex items-center justify-center bg-black bg-opacity-60"
+				onClick={closeModal}
+			/>
 
 			<div className="w-full sm:w-[450px]  absolute top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%]  flex justify-center items-center">
 				<div className="relative w-full h-full mx-auto flex items-center justify-center">
@@ -24,7 +24,7 @@ export default function AuthModalOverlay() {
 							<button
 								type="button"
 								className="bg-transparent rounded-lg text-sm p-1.5 ml-auto inline-flex items-center hover:bg-gray-800 hover:text-white text-white"
-								onClick={handleClick}
+								onClick={closeModal}
 							>
 								<IoClose className="h-5 w-5" />
 							</button>
@@ -42,4 +42,23 @@ export default function AuthModalOverlay() {
 			</div>
 		</>
 	);
+}
+
+function useCloseModal() {
+	const setAuthModalState = useSetRecoilState(authModalState);
+
+	const closeModal = () => {
+		setAuthModalState((prev) => ({ ...prev, isOpen: false, type: "login" }));
+	};
+
+	useEffect(() => {
+		const handleEsc = (e: KeyboardEvent) => {
+			if (e.key === "Escape") closeModal();
+		};
+
+		window.addEventListener("keydown", handleEsc);
+		return () => window.removeEventListener("keydown", handleEsc);
+	}, []);
+
+	return closeModal;
 }

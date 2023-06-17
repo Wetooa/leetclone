@@ -1,8 +1,16 @@
+import { authModalState, AuthModalState } from "@/atoms/authModalAtom";
+import { useSetRecoilState } from "recoil";
 import TextField from "../TextField";
 
 interface SignUpProps {}
 
 export default function SignUp({}: SignUpProps) {
+	const setAuthModalState = useSetRecoilState(authModalState);
+
+	const handleClick = (type: AuthModalState["type"]) => {
+		setAuthModalState((prev) => ({ ...prev, type }));
+	};
+
 	return (
 		<form action="" className="space-y-6 px-6 pb-4">
 			<h3 className="text-xl font-medium text-white">Sign In To LeetClone</h3>
@@ -48,7 +56,11 @@ export default function SignUp({}: SignUpProps) {
 
 			<div className="text-sm font-medium text-gray-300">
 				Already have an account?{" "}
-				<a href="#" className="text-blue-700 hover:underline">
+				<a
+					href="#"
+					className="text-blue-700 hover:underline"
+					onClick={() => handleClick("login")}
+				>
 					Login
 				</a>
 			</div>
