@@ -2,7 +2,7 @@
 
 import { atom } from "recoil";
 
-interface AuthModalState {
+export interface AuthModalState {
 	isOpen: boolean;
 	type: "login" | "register" | "forgotPassword";
 }

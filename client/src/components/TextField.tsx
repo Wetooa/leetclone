@@ -6,6 +6,9 @@ interface TextFieldProps {
 	name: string;
 	id: string;
 	placeholder?: string;
+	error?: boolean;
+	errorMsg?: string;
+	onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
 export default function TextField({
@@ -14,6 +17,9 @@ export default function TextField({
 	name,
 	id,
 	placeholder,
+	error,
+	errorMsg,
+	onChange,
 }: TextFieldProps) {
 	return (
 		<div>
@@ -28,8 +34,12 @@ export default function TextField({
 				type={type}
 				name={name}
 				id={id}
-				className="border-2 outline-none sm:text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 bg-gray-600 border-gray-600 placeholder-gray-400 text-white"
+				className={`border-2 outline-none sm:text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 bg-gray-600 ${
+					error ? "border-red-600" : "border-gray-600"
+				} placeholder-gray-400 text-white transition-all duration-500 delay-300`}
 				placeholder={placeholder}
+				autoComplete={type === "password" ? "new-password" : ""}
+				onChange={onChange}
 			/>
 		</div>
 	);
