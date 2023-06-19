@@ -1,21 +1,61 @@
 import { AuthModalState, authModalState } from "@/atoms/authModalAtom";
 import { useSetRecoilState } from "recoil";
 import TextField from "../TextField";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useSignInWithEmailAndPassword } from "react-firebase-hooks/auth";
+import { auth } from "@/firebase/firebase";
 
 interface LoginProps {}
 
 export default function Login({}: LoginProps) {
 	const setAuthModalState = useSetRecoilState(authModalState);
 
+	const [inputs, setInputs] = useState({
+		email: "",
+		password: "",
+	});
+	const router = useRouter();
+
+	const [signInWithEmailAndPassword, user, loading, error] =
+		useSignInWithEmailAndPassword(auth);
+
 	const handleClick = (type: AuthModalState["type"]) => {
 		setAuthModalState((prev) => ({ ...prev, type }));
 	};
 
+	const handleChangeInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+		setInputs({ ...inputs, [e.target.name]: e.target.value });
+	};
+	const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
+		e.preventDefault();
+
+		if (!inputs.email || !inputs.password) {
+			alert("Please enter all fields");
+			return;
+		}
+
+		try {
+			const newUser = await signInWithEmailAndPassword(
+				inputs.email,
+				inputs.password
+			);
+			if (newUser) router.push("/");
+		} catch (error: any) {
+			alert(error.message);
+		}
+	};
+
+	useEffect(() => {
+		if (error) alert(error);
+	}, [error]);
+
 	return (
-		<form action="" className="space-y-6 px-6 pb-4">
+		<form onSubmit={handleLogin} className="space-y-6 px-6 pb-4">
 			<h3 className="text-xl font-medium text-white">Log In To LeetClone</h3>
 
 			<TextField
+				onChange={handleChangeInput}
 				label="your email"
 				type="email"
 				name="email"
@@ -24,6 +64,7 @@ export default function Login({}: LoginProps) {
 			/>
 
 			<TextField
+				onChange={handleChangeInput}
 				label="your password"
 				type="password"
 				name="password"
@@ -35,7 +76,7 @@ export default function Login({}: LoginProps) {
 				className="w-full text-white focus:right-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center bg-brand-orange hover:bg-brand-orange-s"
 				type="submit"
 			>
-				Login
+				{loading ? "Logging in..." : "Login"}
 			</button>
 
 			<button
