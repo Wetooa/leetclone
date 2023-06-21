@@ -3,6 +3,8 @@ import TextField from "../TextField";
 import { useRouter } from "next/navigation";
 import { useSendPasswordResetEmail } from "react-firebase-hooks/auth";
 import { auth } from "@/firebase/firebase";
+import { toast } from "react-toastify";
+import { defaultToastConfig } from "@/utils/toastConfig";
 
 interface ResetPasswordProps {}
 
@@ -23,13 +25,17 @@ export default function ResetPassword({}: ResetPasswordProps) {
 		const success = await sendPasswordResetEmail(inputs.email);
 
 		if (success) {
-			alert("send email");
+			toast.success(
+				"Password reset email sent successfully!",
+				defaultToastConfig
+			);
 		}
 	};
 
 	useEffect(() => {
 		if (error) {
-			alert(error.message);
+			// change message
+			toast.error(error.message, defaultToastConfig);
 		}
 	}, [error]);
 

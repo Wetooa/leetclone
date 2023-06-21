@@ -5,6 +5,9 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSignInWithEmailAndPassword } from "react-firebase-hooks/auth";
 import { auth } from "@/firebase/firebase";
+import { toast } from "react-toastify";
+import { defaultToastConfig } from "@/utils/toastConfig";
+import { isEmptyInputs } from "@/utils/funcs";
 
 interface LoginProps {}
 
@@ -30,8 +33,8 @@ export default function Login({}: LoginProps) {
 	const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
 
-		if (!inputs.email || !inputs.password) {
-			alert("Please enter all fields");
+		if (isEmptyInputs(inputs)) {
+			toast.error("Please fill out all fields!", defaultToastConfig);
 			return;
 		}
 
@@ -42,12 +45,15 @@ export default function Login({}: LoginProps) {
 			);
 			if (newUser) router.push("/");
 		} catch (error: any) {
-			alert(error.message);
+			toast.error(error.message, defaultToastConfig);
 		}
 	};
 
 	useEffect(() => {
-		if (error) alert(error);
+		if (error) {
+			// change message
+			toast.error(error.message, defaultToastConfig);
+		}
 	}, [error]);
 
 	return (
