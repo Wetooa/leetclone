@@ -1,3 +1,5 @@
+"use client";
+
 import ProblemsTable from "@/components/ProblemsTable/ProblemsTable";
 import Topbar from "@/components/Topbar/Topbar";
 
