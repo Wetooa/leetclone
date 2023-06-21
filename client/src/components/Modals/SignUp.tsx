@@ -37,6 +37,8 @@ export default function SignUp({}: SignUpProps) {
 	const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
 
+		console.log(inputs);
+
 		if (!inputs.email || !inputs.displayName || !inputs.password) {
 			alert("Please enter all fields");
 			return;
@@ -75,7 +77,7 @@ export default function SignUp({}: SignUpProps) {
 				onChange={handleChangeInput}
 				label="display name"
 				type="text"
-				name="name"
+				name="displayName"
 				id="name"
 				placeholder="Adrian Sajulga"
 			/>

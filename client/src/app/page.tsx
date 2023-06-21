@@ -2,6 +2,7 @@
 
 import ProblemsTable from "@/components/ProblemsTable/ProblemsTable";
 import Topbar from "@/components/Topbar/Topbar";
+import { useAuthState } from "react-firebase-hooks/auth";
 
 export default function Home() {
 	return (

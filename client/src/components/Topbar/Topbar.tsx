@@ -1,9 +1,17 @@
 import Link from "next/link";
 import Image from "next/image";
+import { auth } from "@/firebase/firebase";
+import { useAuthState } from "react-firebase-hooks/auth";
+import Logout from "../Buttons/Logout";
+import { useSetRecoilState } from "recoil";
+import { authModalState } from "@/atoms/authModalAtom";
 
 interface TopbarProps {}
 
 export default function Topbar({}: TopbarProps) {
+	const [user] = useAuthState(auth);
+	const setAuthModalState = useSetRecoilState(authModalState);
+
 	return (
 		<nav className="relative flex h-[50px] w-full shrink-0 items-center px-5 bg-dark-layer-1 text-dark-gray-7">
 			<div
@@ -29,11 +37,43 @@ export default function Topbar({}: TopbarProps) {
 							Premium
 						</a>
 					</div>
-					<Link href="/auth">
-						<button className="bg-dark-fill-3 py-1 px-2 cursor-pointer rounded ">
-							Sign In
-						</button>
-					</Link>
+					{!user ? (
+						<Link
+							href="/auth"
+							onClick={() =>
+								setAuthModalState((prev) => ({
+									...prev,
+									isOpen: true,
+									type: "login",
+								}))
+							}
+						>
+							<button className="bg-dark-fill-3 py-1 px-2 cursor-pointer rounded ">
+								Sign In
+							</button>
+						</Link>
+					) : (
+						<>
+							<div className="cursor-pointer group relative">
+								<Image
+									src="/images/avatar.png"
+									alt="avatar"
+									className="g-8 w-8 rounded-full"
+									width={100}
+									height={100}
+								/>
+
+								<div
+									className="absolute top-10 left-2/4 -translate-x-2/4  mx-auto bg-dark-layer-1 text-brand-orange p-2 rounded shadow-lg z-40 group-hover:scale-100 scale-0 
+								transition-all duration-300 ease-in-out"
+								>
+									<p className="text-sm">{user.email}</p>
+								</div>
+							</div>
+
+							<Logout />
+						</>
+					)}
 				</div>
 			</div>
 		</nav>
