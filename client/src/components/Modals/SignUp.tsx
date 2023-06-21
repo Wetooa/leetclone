@@ -7,6 +7,9 @@ import { useEffect, useState } from "react";
 import { useCreateUserWithEmailAndPassword } from "react-firebase-hooks/auth";
 import { auth } from "@/firebase/firebase";
 import { useRouter } from "next/navigation";
+import { toast } from "react-toastify";
+import { defaultToastConfig } from "@/utils/toastConfig";
+import { isEmptyInputs } from "@/utils/funcs";
 
 interface SignUpProps {}
 
@@ -37,8 +40,8 @@ export default function SignUp({}: SignUpProps) {
 	const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
 
-		if (!inputs.email || !inputs.displayName || !inputs.password) {
-			alert("Please enter all fields");
+		if (isEmptyInputs(inputs)) {
+			toast.error("Please fill out all fields!", defaultToastConfig);
 			return;
 		}
 
@@ -50,12 +53,15 @@ export default function SignUp({}: SignUpProps) {
 
 			if (newUser) router.push("/");
 		} catch (error: any) {
-			alert(error.message);
+			toast.error(error.message, defaultToastConfig);
 		}
 	};
 
 	useEffect(() => {
-		if (error) alert(error);
+		if (error) {
+			// change message
+			toast.error(error.message, defaultToastConfig);
+		}
 	}, [error]);
 
 	return (
@@ -75,7 +81,7 @@ export default function SignUp({}: SignUpProps) {
 				onChange={handleChangeInput}
 				label="display name"
 				type="text"
-				name="name"
+				name="displayName"
 				id="name"
 				placeholder="Adrian Sajulga"
 			/>

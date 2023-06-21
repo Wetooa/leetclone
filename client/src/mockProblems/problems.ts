@@ -1,7 +1,7 @@
 export type Problem = {
 	id: string;
 	title: string;
-	difficulty: string;
+	difficulty: "Easy" | "Medium" | "Hard";
 	category: string;
 	order: number;
 	videoId?: string;
