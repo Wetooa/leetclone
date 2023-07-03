@@ -51,10 +51,14 @@ export default function Playground({ problem }: PlaygroundProps) {
 								<div
 									onClick={() => setActiveTestCaseId(index)}
 									key={_.id}
-									className="mr-2 items-start mt-2 text-white"
+									className="mr-2 items-start mt-2 text-gray-400"
 								>
 									<div className="flex flex-wrap items-center gap-y-4">
-										<div className="font-medium items-center transition-all focus:outline-none inline-flex bg-dark-fill-3 hover:bg-dark-fill-2 relative rounded-lg px-4 py-1 cursor-pointer whitespace-nowrap">
+										<div
+											className={`font-medium items-center transition-all focus:outline-none inline-flex bg-dark-fill-3 hover:bg-dark-fill-2 relative rounded-lg px-4 py-1 cursor-pointer whitespace-nowrap ${
+												activeTestCaseId === index ? "text-white" : ""
+											}`}
+										>
 											Case {index + 1}
 										</div>
 									</div>
