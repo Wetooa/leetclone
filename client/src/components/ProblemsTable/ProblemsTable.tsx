@@ -1,4 +1,3 @@
-import { Problem } from "@/mockProblems/problems";
 import Link from "next/link";
 import { BsCheckCircle } from "react-icons/bs";
 import { AiFillYoutube } from "react-icons/ai";
@@ -7,6 +6,7 @@ import YouTube from "react-youtube";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { collection, getDocs, orderBy, query } from "firebase/firestore";
 import { firestore } from "@/firebase/firebase";
+import { DBProblem } from "@/utils/types/problem";
 
 interface ProblemsTableProps {
 	setLoadingProblems: Dispatch<SetStateAction<boolean>>;
@@ -15,7 +15,7 @@ interface ProblemsTableProps {
 export default function ProblemsTable({
 	setLoadingProblems,
 }: ProblemsTableProps) {
-	const problems: Array<Problem> = useGetProblems(setLoadingProblems);
+	const problems: Array<DBProblem> = useGetProblems(setLoadingProblems);
 
 	const [youtubePlayer, setYoutubePlayer] = useState({
 		isOpen: false,
@@ -34,6 +34,8 @@ export default function ProblemsTable({
 		return () => window.removeEventListener("keydown", handleEsc);
 	}, []);
 
+	console.log(problems);
+
 	return (
 		<>
 			<tbody className="text-white">
@@ -44,6 +46,8 @@ export default function ProblemsTable({
 							: doc.difficulty === "Medium"
 							? "text-dark-yellow"
 							: "text-dark-pink";
+
+					console.log(doc.link);
 
 					return (
 						<tr
@@ -56,7 +60,7 @@ export default function ProblemsTable({
 							<td className="px-6 py-4">
 								<Link
 									className="hover:text-blue-600 cursor-pointer"
-									href={`/problems/${doc.id}`}
+									href={doc.link || `/problems/${doc.id}`}
 								>
 									{doc.order}
 									{". "}
@@ -119,8 +123,8 @@ export default function ProblemsTable({
 
 const useGetProblems = (
 	setLoadingProblems: ProblemsTableProps["setLoadingProblems"]
-): Array<Problem> => {
-	const [problems, setProblems] = useState([]);
+): Array<DBProblem> => {
+	const [problems, setProblems] = useState<Array<DBProblem>>([]);
 
 	useEffect(() => {
 		const getProblems = async () => {
@@ -135,7 +139,7 @@ const useGetProblems = (
 
 			const tmp: any = [];
 			querySnapshot.forEach((doc) => {
-				tmp.push({ id: doc.id, ...doc.data() });
+				tmp.push({ id: doc.id, ...doc.data() } as DBProblem);
 			});
 			setProblems(tmp);
 			setLoadingProblems(false);
