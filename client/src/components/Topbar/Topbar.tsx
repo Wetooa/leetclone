@@ -12,7 +12,7 @@ import { BsList } from "react-icons/bs";
 import Timer from "../Timer/Timer";
 
 interface TopbarProps {
-	problemPage: boolean;
+	problemPage?: boolean;
 }
 
 export default function Topbar({ problemPage }: TopbarProps) {
