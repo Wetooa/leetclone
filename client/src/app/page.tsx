@@ -42,7 +42,7 @@ export default function Home() {
 				</table>
 			</div>
 
-			<AddProblemsForm />
+			{/* <AddProblemsForm /> */}
 		</main>
 	);
 }
