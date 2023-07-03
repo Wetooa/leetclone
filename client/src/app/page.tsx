@@ -1,8 +1,8 @@
 "use client";
 
 import ProblemsTable from "@/components/ProblemsTable/ProblemsTable";
+import AddProblemsForm from "@/components/TmpComponents/AddProblemsForm";
 import Topbar from "@/components/Topbar/Topbar";
-import { useAuthState } from "react-firebase-hooks/auth";
 
 export default function Home() {
 	return (
@@ -41,6 +41,8 @@ export default function Home() {
 					<ProblemsTable />
 				</table>
 			</div>
+
+			<AddProblemsForm />
 		</main>
 	);
 }
