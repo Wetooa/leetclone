@@ -1,14 +1,22 @@
-import { problems } from "@/mockProblems/problems";
+import { Problem } from "@/mockProblems/problems";
 import Link from "next/link";
 import { BsCheckCircle } from "react-icons/bs";
 import { AiFillYoutube } from "react-icons/ai";
 import { IoClose } from "react-icons/io5";
 import YouTube from "react-youtube";
-import { useEffect, useState } from "react";
+import { Dispatch, SetStateAction, useEffect, useState } from "react";
+import { collection, getDocs, orderBy, query } from "firebase/firestore";
+import { firestore } from "@/firebase/firebase";
 
-interface ProblemsTableProps {}
+interface ProblemsTableProps {
+	setLoadingProblems: Dispatch<SetStateAction<boolean>>;
+}
 
-export default function ProblemsTable({}: ProblemsTableProps) {
+export default function ProblemsTable({
+	setLoadingProblems,
+}: ProblemsTableProps) {
+	const problems: Array<Problem> = useGetProblems(setLoadingProblems);
+
 	const [youtubePlayer, setYoutubePlayer] = useState({
 		isOpen: false,
 		videoId: "",
@@ -50,6 +58,8 @@ export default function ProblemsTable({}: ProblemsTableProps) {
 									className="hover:text-blue-600 cursor-pointer"
 									href={`/problems/${doc.id}`}
 								>
+									{doc.order}
+									{". "}
 									{doc.title}
 								</Link>
 							</td>
@@ -106,3 +116,33 @@ export default function ProblemsTable({}: ProblemsTableProps) {
 		</>
 	);
 }
+
+const useGetProblems = (
+	setLoadingProblems: ProblemsTableProps["setLoadingProblems"]
+): Array<Problem> => {
+	const [problems, setProblems] = useState([]);
+
+	useEffect(() => {
+		const getProblems = async () => {
+			setLoadingProblems(true);
+
+			const q = query(
+				collection(firestore, "problems"),
+				orderBy("order", "asc")
+			);
+
+			const querySnapshot = await getDocs(q);
+
+			const tmp: any = [];
+			querySnapshot.forEach((doc) => {
+				tmp.push({ id: doc.id, ...doc.data() });
+			});
+			setProblems(tmp);
+			setLoadingProblems(false);
+		};
+
+		getProblems();
+	}, [setLoadingProblems]);
+
+	return problems;
+};
