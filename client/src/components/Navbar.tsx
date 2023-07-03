@@ -1,3 +1,5 @@
+"use client";
+
 import { authModalState } from "@/atoms/authModalAtom";
 import Image from "next/image";
 import Link from "next/link";

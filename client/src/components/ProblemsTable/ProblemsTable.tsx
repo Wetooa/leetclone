@@ -47,6 +47,8 @@ export default function ProblemsTable({
 							? "text-dark-yellow"
 							: "text-dark-pink";
 
+					console.log(doc.link);
+
 					return (
 						<tr
 							className={`${index % 2 == 0 ? "bg-dark-layer-1" : ""}`}
@@ -58,7 +60,7 @@ export default function ProblemsTable({
 							<td className="px-6 py-4">
 								<Link
 									className="hover:text-blue-600 cursor-pointer"
-									href={`/problems/${doc.id}`}
+									href={doc.link || `/problems/${doc.id}`}
 								>
 									{doc.order}
 									{". "}
