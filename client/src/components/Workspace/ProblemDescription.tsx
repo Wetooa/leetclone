@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { auth, firestore } from "@/firebase/firebase";
 import { DBProblem, DBUser, Problem } from "@/utils/types/problem";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, runTransaction } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import { AiFillLike, AiFillDislike } from "react-icons/ai";
 import { BsCheck2Circle } from "react-icons/bs";
@@ -9,6 +9,8 @@ import { TiStarOutline } from "react-icons/ti";
 import CircleSkeleton from "../Skeleton/CircleSkeleton";
 import RectangleSkeleton from "../Skeleton/RectangleSkeleton";
 import { useAuthState } from "react-firebase-hooks/auth";
+import { toast } from "react-toastify";
+import { defaultToastConfig } from "@/utils/toastConfig";
 
 interface ProblemDescriptionProps {
 	problem: Problem;
@@ -17,7 +19,10 @@ interface ProblemDescriptionProps {
 export default function ProblemDescription({
 	problem,
 }: ProblemDescriptionProps) {
-	const { currentProblem, loading } = useGetCurrentProblem(problem.id);
+	const { currentProblem, loading, setCurrentProblem } = useGetCurrentProblem(
+		problem.id
+	);
+	const [user] = useAuthState(auth);
 	const { liked, disliked, solved, starred, setData } =
 		useGetUsersDataOnProblem(problem.id);
 
@@ -26,6 +31,124 @@ export default function ProblemDescription({
 		Medium: "bg-dark-yellow text-dark-yellow",
 		Hard: "bg-dark-pink text-dark-pink",
 	};
+
+	async function handleDislike() {
+		if (!user) {
+			toast.error("You must be logged in to dislike a problem", {
+				...defaultToastConfig,
+				position: "top-left",
+			});
+			return;
+		}
+
+		await runTransaction(firestore, async (transaction) => {
+			const userRef = doc(firestore, "users", user.uid);
+			const problemRef = doc(firestore, "problems", problem.id);
+
+			const userDoc = await transaction.get(userRef);
+			const problemDoc = await transaction.get(problemRef);
+
+			if (!userDoc.exists() || !problemDoc.exists()) return;
+
+			if (disliked) {
+				transaction.update(userRef, {
+					dislikedProblems: (userDoc.data() as DBUser).dislikedProblems.filter(
+						(id: string) => id !== problem.id
+					),
+				});
+
+				transaction.update(problemRef, {
+					dislikes: (problemDoc.data() as DBProblem).dislikes - 1,
+				});
+
+				setCurrentProblem((prev) => ({
+					...prev!,
+					dislikes: prev!.dislikes - 1,
+				}));
+				setData((prev) => ({ ...prev, disliked: false }));
+			} else {
+				transaction.update(userRef, {
+					dislikedProblems: [
+						...(userDoc.data() as DBUser).dislikedProblems,
+						problem.id,
+					],
+					likedProblems: (userDoc.data() as DBUser).likedProblems.filter(
+						(id: string) => id !== problem.id
+					),
+				});
+
+				transaction.update(problemRef, {
+					likes: (problemDoc.data() as DBProblem).likes - (liked ? 1 : 0),
+					dislikes: (problemDoc.data() as DBProblem).dislikes + 1,
+				});
+
+				setCurrentProblem((prev) => ({
+					...prev!,
+					likes: prev!.likes - (liked ? 1 : 0),
+					dislikes: prev!.dislikes + 1,
+				}));
+				setData((prev) => ({ ...prev, liked: false, disliked: true }));
+			}
+		});
+	}
+
+	async function handleLike() {
+		if (!user) {
+			toast.error("You must be logged in to like a problem", {
+				...defaultToastConfig,
+				position: "top-left",
+			});
+			return;
+		}
+
+		await runTransaction(firestore, async (transaction) => {
+			const userRef = doc(firestore, "users", user.uid);
+			const problemRef = doc(firestore, "problems", problem.id);
+
+			const userDoc = await transaction.get(userRef);
+			const problemDoc = await transaction.get(problemRef);
+
+			if (!userDoc.exists() || !problemDoc.exists()) return;
+
+			if (liked) {
+				transaction.update(userRef, {
+					likedProblems: (userDoc.data() as DBUser).likedProblems.filter(
+						(id: string) => id !== problemDoc.id
+					),
+				});
+
+				transaction.update(problemRef, {
+					likes: (problemDoc.data() as DBProblem).likes - 1,
+				});
+
+				setCurrentProblem((prev) => ({ ...prev!, likes: prev!.likes - 1 }));
+				setData((prev) => ({ ...prev, liked: false }));
+			} else {
+				transaction.update(userRef, {
+					likedProblems: [
+						...(userDoc.data() as DBUser).likedProblems,
+						problem.id,
+					],
+					dislikedProblems: (userDoc.data() as DBUser).dislikedProblems.filter(
+						(id: string) => id !== problem.id
+					),
+				});
+
+				transaction.update(problemRef, {
+					likes: (problemDoc.data() as DBProblem).likes + 1,
+					dislikes:
+						(problemDoc.data() as DBProblem).dislikes - (disliked ? 1 : 0),
+				});
+
+				setCurrentProblem((prev) => ({
+					...prev!,
+					likes: prev!.likes + 1,
+					dislikes: prev!.dislikes - (disliked ? 1 : 0),
+				}));
+				setData((prev) => ({ ...prev, liked: true, disliked: false }));
+			}
+		});
+	}
 
 	return (
 		<div className="bg-dark-layer-1">
@@ -60,11 +183,18 @@ export default function ProblemDescription({
 								<div className="rounded p-[3px] ml-4 text-lg transition-colors duration-200 text-green-s text-dark-green-s">
 									<BsCheck2Circle />
 								</div>
-								<div className="flex items-center cursor-pointer hover:bg-dark-fill-3 space-x-1 rounded p-[3px]  ml-4 text-lg transition-colors duration-200 text-dark-gray-6">
+								<div
+									onClick={handleLike}
+									className="flex items-center cursor-pointer hover:bg-dark-fill-3 space-x-1 rounded p-[3px]  ml-4 text-lg transition-colors duration-200 text-dark-gray-6"
+								>
 									<AiFillLike className={liked ? "text-dark-blue-s" : ""} />
 									<span className="text-xs">{currentProblem.likes}</span>
 								</div>
-								<div className="flex items-center cursor-pointer hover:bg-dark-fill-3 space-x-1 rounded p-[3px]  ml-4 text-lg transition-colors duration-200 text-green-s text-dark-gray-6">
+
+								<div
+									onClick={handleDislike}
+									className="flex items-center cursor-pointer hover:bg-dark-fill-3 space-x-1 rounded p-[3px]  ml-4 text-lg transition-colors duration-200 text-green-s text-dark-gray-6"
+								>
 									<AiFillDislike
 										className={disliked ? "text-dark-blue-s" : ""}
 									/>
@@ -175,7 +305,7 @@ function useGetCurrentProblem(problemId: string) {
 		getCurrentProblem();
 	}, [problemId]);
 
-	return { currentProblem, loading };
+	return { currentProblem, loading, setCurrentProblem };
 }
 
 function useGetUsersDataOnProblem(problemId: string) {
