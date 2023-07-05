@@ -66,7 +66,7 @@ export default function Topbar({ problemPage }: TopbarProps) {
 						</a>
 					</div>
 
-					{problemPage && <Timer />}
+					{user && problemPage && <Timer />}
 
 					{!user ? (
 						<Link

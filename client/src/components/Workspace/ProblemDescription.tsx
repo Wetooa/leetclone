@@ -1,8 +1,14 @@
-import { Problem } from "@/utils/types/problem";
 import Image from "next/image";
+import { auth, firestore } from "@/firebase/firebase";
+import { DBProblem, DBUser, Problem } from "@/utils/types/problem";
+import { doc, getDoc } from "firebase/firestore";
+import { useEffect, useState } from "react";
 import { AiFillLike, AiFillDislike } from "react-icons/ai";
 import { BsCheck2Circle } from "react-icons/bs";
 import { TiStarOutline } from "react-icons/ti";
+import CircleSkeleton from "../Skeleton/CircleSkeleton";
+import RectangleSkeleton from "../Skeleton/RectangleSkeleton";
+import { useAuthState } from "react-firebase-hooks/auth";
 
 interface ProblemDescriptionProps {
 	problem: Problem;
@@ -11,6 +17,16 @@ interface ProblemDescriptionProps {
 export default function ProblemDescription({
 	problem,
 }: ProblemDescriptionProps) {
+	const { currentProblem, loading } = useGetCurrentProblem(problem.id);
+	const { liked, disliked, solved, starred, setData } =
+		useGetUsersDataOnProblem(problem.id);
+
+	const problemDifficultyClass: { [key: string]: string } = {
+		Easy: "bg-olive text-olive",
+		Medium: "bg-dark-yellow text-dark-yellow",
+		Hard: "bg-dark-pink text-dark-pink",
+	};
+
 	return (
 		<div className="bg-dark-layer-1">
 			<div className="flex h-11 w-full items-center pt-2 bg-dark-layer-2 text-white overflow-x-hidden">
@@ -31,27 +47,44 @@ export default function ProblemDescription({
 								{problem.title}
 							</div>
 						</div>
-						<div className="flex items-center mt-3">
-							<div
-								className={`text-olive bg-olive inline-block rounded-[21px] bg-opacity-[.15] px-2.5 py-1 text-xs font-medium capitalize `}
-							>
-								Easy
+						{!loading && currentProblem ? (
+							<div className="flex items-center mt-3">
+								<div
+									className={`${
+										problemDifficultyClass[currentProblem.difficulty]
+									} inline-block rounded-[21px] bg-opacity-[.15] px-2.5 py-1 text-xs font-medium capitalize `}
+								>
+									{currentProblem.difficulty}
+								</div>
+
+								<div className="rounded p-[3px] ml-4 text-lg transition-colors duration-200 text-green-s text-dark-green-s">
+									<BsCheck2Circle />
+								</div>
+								<div className="flex items-center cursor-pointer hover:bg-dark-fill-3 space-x-1 rounded p-[3px]  ml-4 text-lg transition-colors duration-200 text-dark-gray-6">
+									<AiFillLike className={liked ? "text-dark-blue-s" : ""} />
+									<span className="text-xs">{currentProblem.likes}</span>
+								</div>
+								<div className="flex items-center cursor-pointer hover:bg-dark-fill-3 space-x-1 rounded p-[3px]  ml-4 text-lg transition-colors duration-200 text-green-s text-dark-gray-6">
+									<AiFillDislike
+										className={disliked ? "text-dark-blue-s" : ""}
+									/>
+									<span className="text-xs">{currentProblem.dislikes}</span>
+								</div>
+								<div className="cursor-pointer hover:bg-dark-fill-3  rounded p-[3px]  ml-4 text-xl transition-colors duration-200 text-green-s text-dark-gray-6 ">
+									<TiStarOutline
+										className={starred ? "text-dark-yellow" : ""}
+									/>
+								</div>
 							</div>
-							<div className="rounded p-[3px] ml-4 text-lg transition-colors duration-200 text-green-s text-dark-green-s">
-								<BsCheck2Circle />
+						) : (
+							<div className="mt-3 flex space-x-2">
+								<RectangleSkeleton />
+								<CircleSkeleton />
+								<RectangleSkeleton />
+								<RectangleSkeleton />
+								<CircleSkeleton />
 							</div>
-							<div className="flex items-center cursor-pointer hover:bg-dark-fill-3 space-x-1 rounded p-[3px]  ml-4 text-lg transition-colors duration-200 text-dark-gray-6">
-								<AiFillLike />
-								<span className="text-xs">120</span>
-							</div>
-							<div className="flex items-center cursor-pointer hover:bg-dark-fill-3 space-x-1 rounded p-[3px]  ml-4 text-lg transition-colors duration-200 text-green-s text-dark-gray-6">
-								<AiFillDislike />
-								<span className="text-xs">2</span>
-							</div>
-							<div className="cursor-pointer hover:bg-dark-fill-3  rounded p-[3px]  ml-4 text-xl transition-colors duration-200 text-green-s text-dark-gray-6 ">
-								<TiStarOutline />
-							</div>
-						</div>
+						)}
 
 						<div className="text-white text-sm">
 							<div
@@ -117,4 +150,70 @@ export default function ProblemDescription({
 			</div>
 		</div>
 	);
+}
+
+function useGetCurrentProblem(problemId: string) {
+	const [currentProblem, setCurrentProblem] = useState<DBProblem>();
+	const [loading, setLoading] = useState(true);
+
+	useEffect(() => {
+		const getCurrentProblem = async () => {
+			setLoading(true);
+
+			const docRef = doc(firestore, "problems", problemId);
+			const docSnap = await getDoc(docRef);
+
+			if (docSnap.exists()) {
+				const problem = docSnap.data();
+
+				setCurrentProblem({ id: docSnap.id, ...problem } as DBProblem);
+			}
+
+			setLoading(false);
+		};
+
+		getCurrentProblem();
+	}, [problemId]);
+
+	return { currentProblem, loading };
+}
+
+function useGetUsersDataOnProblem(problemId: string) {
+	const [data, setData] = useState({
+		liked: false,
+		disliked: false,
+		starred: false,
+		solved: false,
+	});
+	const [user] = useAuthState(auth);
+
+	useEffect(() => {
+		const getUsersDataOnProblem = async () => {
+			const userRef = doc(firestore, "users", user!.uid);
+			const userSnap = await getDoc(userRef);
+
+			if (userSnap.exists()) {
+				const data = userSnap.data() as DBUser;
+				const {
+					solvedProblems,
+					likedProblems,
+					dislikedProblems,
+					starredProblems,
+				} = data;
+
+				setData({
+					liked: likedProblems.includes(problemId),
+					disliked: dislikedProblems.includes(problemId),
+					starred: starredProblems.includes(problemId),
+					solved: solvedProblems.includes(problemId),
+				});
+			}
+		};
+
+		if (user) getUsersDataOnProblem();
+		return () =>
+			setData({ liked: false, disliked: false, starred: false, solved: false });
+	}, [problemId, user]);
+
+	return { ...data, setData };
 }

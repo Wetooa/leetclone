@@ -39,7 +39,6 @@ export default function Home() {
 								<th scope="col" className="px-6 py-3 w-0 font-medium">
 									Difficulty
 								</th>
-
 								<th scope="col" className="px-6 py-3 w-0 font-medium">
 									Category
 								</th>

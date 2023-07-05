@@ -5,11 +5,12 @@ import { authModalState, AuthModalState } from "@/atoms/authModalAtom";
 import { useSetRecoilState } from "recoil";
 import { useEffect, useState } from "react";
 import { useCreateUserWithEmailAndPassword } from "react-firebase-hooks/auth";
-import { auth } from "@/firebase/firebase";
+import { auth, firestore } from "@/firebase/firebase";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { defaultToastConfig } from "@/utils/toastConfig";
 import { isEmptyInputs } from "@/utils/funcs";
+import { doc, setDoc } from "firebase/firestore";
 
 interface SignUpProps {}
 
@@ -51,9 +52,31 @@ export default function SignUp({}: SignUpProps) {
 				inputs.password
 			);
 
-			if (newUser) router.push("/");
+			if (!newUser) return;
+
+			toast.loading("Creating your account....", {
+				...defaultToastConfig,
+				toastId: "loadingToast",
+			});
+			const { uid, email } = newUser.user;
+			const userData = {
+				uid,
+				email,
+				displayName: inputs.displayName,
+				createdAt: Date.now(),
+				updatedAt: Date.now(),
+				likedProblems: [],
+				dislikedProblems: [],
+				solvedProblems: [],
+				starredProblems: [],
+			};
+
+			await setDoc(doc(firestore, "users", newUser.user.uid), userData);
+			router.push("/");
 		} catch (error: any) {
 			toast.error(error.message, defaultToastConfig);
+		} finally {
+			toast.dismiss("loadingToast");
 		}
 	};
 
