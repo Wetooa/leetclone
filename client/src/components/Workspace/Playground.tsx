@@ -5,14 +5,54 @@ import { langs } from "@uiw/codemirror-extensions-langs";
 import PreferenceNav from "./PreferenceNav/PreferenceNav";
 import EditorFooter from "./EditorFooter";
 import { Problem } from "@/utils/types/problem";
-import { useState } from "react";
+import { Dispatch, useEffect, useRef, useState } from "react";
+import { useAuthState } from "react-firebase-hooks/auth";
+import { auth } from "@/firebase/firebase";
+import { defaultToastConfig } from "@/utils/toastConfig";
+import { toast } from "react-toastify";
+import { problems } from "@/utils/problems";
 
 interface PlaygroundProps {
 	problem: Problem;
+	setSuccess: Dispatch<boolean>;
 }
 
-export default function Playground({ problem }: PlaygroundProps) {
+export default function Playground({ problem, setSuccess }: PlaygroundProps) {
 	const [activeTestCaseId, setActiveTestCaseId] = useState(0);
+	const [userCode, setUserCode] = useState(problem.starterCode);
+	const [user] = useAuthState(auth);
+
+	const handleSubmit = () => {
+		if (!user) {
+			toast.error("Please log in to submit your code", defaultToastConfig);
+			return;
+		}
+
+		try {
+			const cb = new Function(`return ${userCode}`)();
+			const success = problems[problem.id].handlerFunction(cb);
+
+			if (success) {
+				toast.success("All testcases passed!", defaultToastConfig);
+				setSuccess(true);
+				setTimeout(setSuccess, 4000, false);
+			} else {
+				toast.error("There was an error in your code!", defaultToastConfig);
+			}
+		} catch (error: any) {
+			if (
+				error.message.startsWith(
+					"AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal"
+				)
+			) {
+				toast.error("One of more test cases failed!", defaultToastConfig);
+			} else toast.error(error.message, defaultToastConfig);
+		}
+	};
+
+	const onChange = (value: string) => {
+		setUserCode(value);
+	};
 
 	return (
 		<div className="bg-dark-layer-1 flex flex-col relative overflow-x-hidden">
@@ -26,8 +66,9 @@ export default function Playground({ problem }: PlaygroundProps) {
 			>
 				<div className="w-full overflow-auto">
 					<CodeMirror
-						value={problem.starterCode}
+						value={userCode}
 						theme={vscodeDark}
+						onChange={onChange}
 						extensions={[langs.tsx()]}
 						style={{ fontSize: 16 }}
 					/>
@@ -85,7 +126,7 @@ export default function Playground({ problem }: PlaygroundProps) {
 				</div>
 			</Split>
 
-			<EditorFooter />
+			<EditorFooter handleSubmit={handleSubmit} />
 		</div>
 	);
 }

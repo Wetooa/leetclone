@@ -12,7 +12,7 @@ export default async function ProblemsPage(props: any) {
 
 	return (
 		<>
-			<Topbar problemPage />
+			<Topbar problemPage pid={pid} />
 			<Workspace problem={problem} />
 		</>
 	);

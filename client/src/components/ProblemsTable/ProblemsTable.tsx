@@ -34,8 +34,6 @@ export default function ProblemsTable({
 		return () => window.removeEventListener("keydown", handleEsc);
 	}, []);
 
-	console.log(problems);
-
 	return (
 		<>
 			<tbody className="text-white">
@@ -46,8 +44,6 @@ export default function ProblemsTable({
 							: doc.difficulty === "Medium"
 							? "text-dark-yellow"
 							: "text-dark-pink";
-
-					console.log(doc.link);
 
 					return (
 						<tr

@@ -1,11 +1,23 @@
 import Image from "next/image";
 import { auth, firestore } from "@/firebase/firebase";
 import { DBProblem, DBUser, Problem } from "@/utils/types/problem";
-import { doc, getDoc, runTransaction } from "firebase/firestore";
+import {
+	Transaction,
+	arrayRemove,
+	arrayUnion,
+	doc,
+	getDoc,
+	runTransaction,
+	updateDoc,
+} from "firebase/firestore";
 import { useEffect, useState } from "react";
-import { AiFillLike, AiFillDislike } from "react-icons/ai";
+import {
+	AiFillLike,
+	AiFillDislike,
+	AiOutlineLoading3Quarters,
+} from "react-icons/ai";
 import { BsCheck2Circle } from "react-icons/bs";
-import { TiStarOutline } from "react-icons/ti";
+import { TiStarFullOutline } from "react-icons/ti";
 import CircleSkeleton from "../Skeleton/CircleSkeleton";
 import RectangleSkeleton from "../Skeleton/RectangleSkeleton";
 import { useAuthState } from "react-firebase-hooks/auth";
@@ -25,12 +37,23 @@ export default function ProblemDescription({
 	const [user] = useAuthState(auth);
 	const { liked, disliked, solved, starred, setData } =
 		useGetUsersDataOnProblem(problem.id);
+	const [updating, setUpdating] = useState(false);
 
 	const problemDifficultyClass: { [key: string]: string } = {
 		Easy: "bg-olive text-olive",
 		Medium: "bg-dark-yellow text-dark-yellow",
 		Hard: "bg-dark-pink text-dark-pink",
 	};
+
+	async function returnUserDataAndProblemData(transaction: Transaction) {
+		const userRef = doc(firestore, "users", user!.uid);
+		const problemRef = doc(firestore, "problems", problem.id);
+
+		const userDoc = await transaction.get(userRef);
+		const problemDoc = await transaction.get(problemRef);
+
+		return { userRef, userDoc, problemRef, problemDoc };
+	}
 
 	async function handleDislike() {
 		if (!user) {
@@ -41,12 +64,12 @@ export default function ProblemDescription({
 			return;
 		}
 
-		await runTransaction(firestore, async (transaction) => {
-			const userRef = doc(firestore, "users", user.uid);
-			const problemRef = doc(firestore, "problems", problem.id);
+		if (updating) return;
+		setUpdating(true);
 
-			const userDoc = await transaction.get(userRef);
-			const problemDoc = await transaction.get(problemRef);
+		await runTransaction(firestore, async (transaction) => {
+			const { userRef, userDoc, problemRef, problemDoc } =
+				await returnUserDataAndProblemData(transaction);
 
 			if (!userDoc.exists() || !problemDoc.exists()) return;
 
@@ -90,6 +113,8 @@ export default function ProblemDescription({
 				setData((prev) => ({ ...prev, liked: false, disliked: true }));
 			}
 		});
+
+		setUpdating(false);
 	}
 
 	async function handleLike() {
@@ -101,19 +126,19 @@ export default function ProblemDescription({
 			return;
 		}
 
-		await runTransaction(firestore, async (transaction) => {
-			const userRef = doc(firestore, "users", user.uid);
-			const problemRef = doc(firestore, "problems", problem.id);
+		if (updating) return;
+		setUpdating(true);
 
-			const userDoc = await transaction.get(userRef);
-			const problemDoc = await transaction.get(problemRef);
+		await runTransaction(firestore, async (transaction) => {
+			const { userRef, userDoc, problemRef, problemDoc } =
+				await returnUserDataAndProblemData(transaction);
 
 			if (!userDoc.exists() || !problemDoc.exists()) return;
 
 			if (liked) {
 				transaction.update(userRef, {
 					likedProblems: (userDoc.data() as DBUser).likedProblems.filter(
-						(id: string) => id !== problemDoc.id
+						(id: string) => id !== problem.id
 					),
 				});
 
@@ -148,6 +173,42 @@ export default function ProblemDescription({
 				setData((prev) => ({ ...prev, liked: true, disliked: false }));
 			}
 		});
+
+		setUpdating(false);
+	}
+
+	async function handleStar() {
+		if (!user) {
+			toast.error("You must be logged in to start a problem", {
+				...defaultToastConfig,
+				position: "top-left",
+			});
+			return;
+		}
+
+		if (updating) return;
+		setUpdating(true);
+
+		const userRef = doc(firestore, "users", user.uid);
+		const userDoc = await getDoc(userRef);
+
+		if (!userDoc.exists()) return;
+
+		if (starred) {
+			updateDoc(userRef, {
+				starredProblems: arrayRemove(problem.id),
+			});
+
+			setData((prev) => ({ ...prev, starred: false }));
+		} else {
+			updateDoc(userRef, {
+				starredProblems: arrayUnion(problem.id),
+			});
+
+			setData((prev) => ({ ...prev, starred: true }));
+		}
+
+		setUpdating(false);
 	}
 
 	return (
@@ -180,30 +241,51 @@ export default function ProblemDescription({
 									{currentProblem.difficulty}
 								</div>
 
-								<div className="rounded p-[3px] ml-4 text-lg transition-colors duration-200 text-green-s text-dark-green-s">
-									<BsCheck2Circle />
-								</div>
+								{solved && (
+									<div className="rounded p-[3px] ml-4 text-lg transition-colors duration-200 text-green-s text-dark-green-s">
+										<BsCheck2Circle />
+									</div>
+								)}
 								<div
 									onClick={handleLike}
 									className="flex items-center cursor-pointer hover:bg-dark-fill-3 space-x-1 rounded p-[3px]  ml-4 text-lg transition-colors duration-200 text-dark-gray-6"
 								>
-									<AiFillLike className={liked ? "text-dark-blue-s" : ""} />
-									<span className="text-xs">{currentProblem.likes}</span>
+									{updating ? (
+										<AiOutlineLoading3Quarters className="animate-spin" />
+									) : (
+										<>
+											<AiFillLike className={liked ? "text-dark-blue-s" : ""} />
+											<span className="text-xs">{currentProblem.likes}</span>
+										</>
+									)}
 								</div>
 
 								<div
 									onClick={handleDislike}
 									className="flex items-center cursor-pointer hover:bg-dark-fill-3 space-x-1 rounded p-[3px]  ml-4 text-lg transition-colors duration-200 text-green-s text-dark-gray-6"
 								>
-									<AiFillDislike
-										className={disliked ? "text-dark-blue-s" : ""}
-									/>
-									<span className="text-xs">{currentProblem.dislikes}</span>
+									{updating ? (
+										<AiOutlineLoading3Quarters className="animate-spin" />
+									) : (
+										<>
+											<AiFillDislike
+												className={disliked ? "text-dark-blue-s" : ""}
+											/>
+											<span className="text-xs">{currentProblem.dislikes}</span>
+										</>
+									)}
 								</div>
-								<div className="cursor-pointer hover:bg-dark-fill-3  rounded p-[3px]  ml-4 text-xl transition-colors duration-200 text-green-s text-dark-gray-6 ">
-									<TiStarOutline
-										className={starred ? "text-dark-yellow" : ""}
-									/>
+								<div
+									onClick={handleStar}
+									className="cursor-pointer hover:bg-dark-fill-3  rounded p-[3px]  ml-4 text-xl transition-colors duration-200 text-green-s text-dark-gray-6 "
+								>
+									{updating ? (
+										<AiOutlineLoading3Quarters className="animate-spin" />
+									) : (
+										<TiStarFullOutline
+											className={starred ? "text-dark-yellow" : ""}
+										/>
+									)}
 								</div>
 							</div>
 						) : (
