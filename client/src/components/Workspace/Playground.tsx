@@ -5,11 +5,12 @@ import { langs } from "@uiw/codemirror-extensions-langs";
 import PreferenceNav from "./PreferenceNav/PreferenceNav";
 import EditorFooter from "./EditorFooter";
 import { Problem } from "@/utils/types/problem";
-import { Dispatch, useState } from "react";
+import { Dispatch, useEffect, useRef, useState } from "react";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth } from "@/firebase/firebase";
 import { defaultToastConfig } from "@/utils/toastConfig";
 import { toast } from "react-toastify";
+import { problems } from "@/utils/problems";
 
 interface PlaygroundProps {
 	problem: Problem;
@@ -28,9 +29,24 @@ export default function Playground({ problem, setSuccess }: PlaygroundProps) {
 		}
 
 		try {
-			const cb = new Function();
+			const cb = new Function(`return ${userCode}`)();
+			const success = problems[problem.id].handlerFunction(cb);
+
+			if (success) {
+				toast.success("All testcases passed!", defaultToastConfig);
+				setSuccess(true);
+				setTimeout(setSuccess, 4000, false);
+			} else {
+				toast.error("There was an error in your code!", defaultToastConfig);
+			}
 		} catch (error: any) {
-			toast.error(error.message, defaultToastConfig);
+			if (
+				error.message.startsWith(
+					"AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal"
+				)
+			) {
+				toast.error("One of more test cases failed!", defaultToastConfig);
+			} else toast.error(error.message, defaultToastConfig);
 		}
 	};
 
