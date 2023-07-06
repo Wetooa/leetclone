@@ -5,14 +5,38 @@ import { langs } from "@uiw/codemirror-extensions-langs";
 import PreferenceNav from "./PreferenceNav/PreferenceNav";
 import EditorFooter from "./EditorFooter";
 import { Problem } from "@/utils/types/problem";
-import { useState } from "react";
+import { Dispatch, useState } from "react";
+import { useAuthState } from "react-firebase-hooks/auth";
+import { auth } from "@/firebase/firebase";
+import { defaultToastConfig } from "@/utils/toastConfig";
+import { toast } from "react-toastify";
 
 interface PlaygroundProps {
 	problem: Problem;
+	setSuccess: Dispatch<boolean>;
 }
 
-export default function Playground({ problem }: PlaygroundProps) {
+export default function Playground({ problem, setSuccess }: PlaygroundProps) {
 	const [activeTestCaseId, setActiveTestCaseId] = useState(0);
+	const [userCode, setUserCode] = useState(problem.starterCode);
+	const [user] = useAuthState(auth);
+
+	const handleSubmit = () => {
+		if (!user) {
+			toast.error("Please log in to submit your code", defaultToastConfig);
+			return;
+		}
+
+		try {
+			const cb = new Function();
+		} catch (error: any) {
+			toast.error(error.message, defaultToastConfig);
+		}
+	};
+
+	const onChange = (value: string) => {
+		setUserCode(value);
+	};
 
 	return (
 		<div className="bg-dark-layer-1 flex flex-col relative overflow-x-hidden">
@@ -26,8 +50,9 @@ export default function Playground({ problem }: PlaygroundProps) {
 			>
 				<div className="w-full overflow-auto">
 					<CodeMirror
-						value={problem.starterCode}
+						value={userCode}
 						theme={vscodeDark}
+						onChange={onChange}
 						extensions={[langs.tsx()]}
 						style={{ fontSize: 16 }}
 					/>
@@ -85,7 +110,7 @@ export default function Playground({ problem }: PlaygroundProps) {
 				</div>
 			</Split>
 
-			<EditorFooter />
+			<EditorFooter handleSubmit={handleSubmit} />
 		</div>
 	);
 }
