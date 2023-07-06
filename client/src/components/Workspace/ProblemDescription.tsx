@@ -1,7 +1,15 @@
 import Image from "next/image";
 import { auth, firestore } from "@/firebase/firebase";
 import { DBProblem, DBUser, Problem } from "@/utils/types/problem";
-import { Transaction, doc, getDoc, runTransaction } from "firebase/firestore";
+import {
+	Transaction,
+	arrayRemove,
+	arrayUnion,
+	doc,
+	getDoc,
+	runTransaction,
+	updateDoc,
+} from "firebase/firestore";
 import { useEffect, useState } from "react";
 import {
 	AiFillLike,
@@ -9,7 +17,7 @@ import {
 	AiOutlineLoading3Quarters,
 } from "react-icons/ai";
 import { BsCheck2Circle } from "react-icons/bs";
-import { TiStarOutline } from "react-icons/ti";
+import { TiStarFullOutline } from "react-icons/ti";
 import CircleSkeleton from "../Skeleton/CircleSkeleton";
 import RectangleSkeleton from "../Skeleton/RectangleSkeleton";
 import { useAuthState } from "react-firebase-hooks/auth";
@@ -181,31 +189,24 @@ export default function ProblemDescription({
 		if (updating) return;
 		setUpdating(true);
 
-		await runTransaction(firestore, async (transaction) => {
-			const userRef = doc(firestore, "users", user.uid);
-			const userDoc = await transaction.get(userRef);
+		const userRef = doc(firestore, "users", user.uid);
+		const userDoc = await getDoc(userRef);
 
-			if (!userDoc.exists()) return;
+		if (!userDoc.exists()) return;
 
-			if (starred) {
-				transaction.update(userRef, {
-					starredProblems: (userDoc.data() as DBUser).starredProblems.filter(
-						(id: string) => id !== problem.id
-					),
-				});
+		if (starred) {
+			updateDoc(userRef, {
+				starredProblems: arrayRemove(problem.id),
+			});
 
-				setData((prev) => ({ ...prev, starred: false }));
-			} else {
-				transaction.update(userRef, {
-					starredProblems: [
-						...(userDoc.data() as DBUser).starredProblems,
-						problem.id,
-					],
-				});
+			setData((prev) => ({ ...prev, starred: false }));
+		} else {
+			updateDoc(userRef, {
+				starredProblems: arrayUnion(problem.id),
+			});
 
-				setData((prev) => ({ ...prev, starred: true }));
-			}
-		});
+			setData((prev) => ({ ...prev, starred: true }));
+		}
 
 		setUpdating(false);
 	}
@@ -281,7 +282,7 @@ export default function ProblemDescription({
 									{updating ? (
 										<AiOutlineLoading3Quarters className="animate-spin" />
 									) : (
-										<TiStarOutline
+										<TiStarFullOutline
 											className={starred ? "text-dark-yellow" : ""}
 										/>
 									)}

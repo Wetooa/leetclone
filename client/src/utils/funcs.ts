@@ -5,3 +5,7 @@ export const isEmptyInputs = (input: any): boolean => {
 	}
 	return false;
 };
+
+export const modulo = (n: number, d: number): number => {
+	return ((n % d) + d) % d;
+};

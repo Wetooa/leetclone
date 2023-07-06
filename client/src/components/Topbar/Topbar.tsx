@@ -10,14 +10,34 @@ import { authModalState } from "@/atoms/authModalAtom";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import { BsList } from "react-icons/bs";
 import Timer from "../Timer/Timer";
+import { problems } from "@/utils/problems";
+import { modulo } from "@/utils/funcs";
+import { useRouter } from "next/navigation";
 
 interface TopbarProps {
 	problemPage?: boolean;
+	pid?: string;
 }
 
-export default function Topbar({ problemPage }: TopbarProps) {
+export default function Topbar({ problemPage, pid }: TopbarProps) {
 	const [user] = useAuthState(auth);
+	const router = useRouter();
 	const setAuthModalState = useSetRecoilState(authModalState);
+
+	const handleProblemChange = (isForward: boolean) => {
+		if (!pid) return;
+
+		const { order } = problems[pid];
+		const direction = isForward ? 1 : -1;
+		const length = Object.keys(problems).length;
+
+		const nextProblemOrder = modulo(order + direction - 1, length) + 1;
+		const nextProblemKey = Object.keys(problems).find(
+			(p) => problems[p].order === nextProblemOrder
+		);
+
+		router.push(`/problems/${nextProblemKey}`);
+	};
 
 	return (
 		<nav className="relative flex h-[50px] w-full shrink-0 items-center px-5 bg-dark-layer-1 text-dark-gray-7">
@@ -37,7 +57,10 @@ export default function Topbar({ problemPage }: TopbarProps) {
 
 				{problemPage && (
 					<div className="flex items0center gap-4 flex-1 justify-center">
-						<div className="flex items-center justify-center rounded bg-dark-fill-3 hover:bg-dark-fill-2 h-8 w-8 cursor-pointer">
+						<div
+							onClick={() => handleProblemChange(false)}
+							className="flex items-center justify-center rounded bg-dark-fill-3 hover:bg-dark-fill-2 h-8 w-8 cursor-pointer"
+						>
 							<FaChevronLeft />
 						</div>
 
@@ -48,7 +71,10 @@ export default function Topbar({ problemPage }: TopbarProps) {
 							<BsList /> Problems List
 						</Link>
 
-						<div className="flex items-center justify-center rounded bg-dark-fill-3 hover:bg-dark-fill-2 h-8 w-8 cursor-pointer">
+						<div
+							onClick={() => handleProblemChange(true)}
+							className="flex items-center justify-center rounded bg-dark-fill-3 hover:bg-dark-fill-2 h-8 w-8 cursor-pointer"
+						>
 							<FaChevronRight />
 						</div>
 					</div>
