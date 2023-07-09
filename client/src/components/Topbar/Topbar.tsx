@@ -48,7 +48,7 @@ export default function Topbar({ problemPage, pid }: TopbarProps) {
 			>
 				<Link href="/" className="h-[22px] flex-1">
 					<Image
-						src="/images/logo-full.png"
+						src={user?.photoURL ?? "/images/logo-full.png"}
 						alt="Logo"
 						height={100}
 						width={100}
