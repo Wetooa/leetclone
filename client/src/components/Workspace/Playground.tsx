@@ -46,31 +46,31 @@ export default function Playground({
 	setData,
 	data,
 }: PlaygroundProps) {
-	// const [fontSize, setFontSize] = useLocalStorage("lcc-fontSize", "16px");
-	// const [keyBindings, setKeyBindings] = useLocalStorage(
-	// 	"lcc-keyBindings",
-	// 	"standard"
-	// );
+	const [fontSize, setFontSize] = useLocalStorage("lcc-fontSize", "16px");
+	const [keyBindings, setKeyBindings] = useLocalStorage(
+		"lcc-keyBindings",
+		"standard"
+	);
 
 	const [activeTestCaseId, setActiveTestCaseId] = useState(0);
 	const [userCode, setUserCode] = useState(problem.starterCode);
 	const [user] = useAuthState(auth);
 
 	const [settings, setSettings] = useState<ISettings>({
-		fontSize: "16px",
-		keyBinding: "standard",
+		fontSize: fontSize,
+		keyBinding: keyBindings,
 		settingsModalIsOpen: false,
 		dropDownIsOpen: false,
 		dropDownId: "fontSize",
 	});
 
-	// useEffect(() => {
-	// 	setFontSize(settings.fontSize);
-	// }, [settings.fontSize, setFontSize]);
+	useEffect(() => {
+		setFontSize(settings.fontSize);
+	}, [settings.fontSize, setFontSize]);
 
-	// useEffect(() => {
-	// 	setKeyBindings(settings.keyBinding);
-	// }, [settings.keyBinding, setKeyBindings]);
+	useEffect(() => {
+		setKeyBindings(settings.keyBinding);
+	}, [settings.keyBinding, setKeyBindings]);
 
 	const handleSubmit = async () => {
 		if (!user) {
