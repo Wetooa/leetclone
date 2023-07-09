@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { BsCheckCircle } from "react-icons/bs";
 import { AiFillYoutube } from "react-icons/ai";
@@ -60,7 +62,7 @@ export default function ProblemsTable({
 							<td className="px-6 py-4">
 								<Link
 									className="hover:text-blue-600 cursor-pointer"
-									href={doc.link ?? `/problems/${doc.id}`}
+									href={doc.link || `/problems/${doc.id}`}
 								>
 									{doc.order}
 									{". "}
