@@ -18,7 +18,7 @@ export default async function ProblemsPage(props: any) {
 	);
 }
 
-export async function getStaticPaths(): Promise<GetStaticPathsResult> {
+async function getStaticPaths(): Promise<GetStaticPathsResult> {
 	const paths = Object.keys(problems).map((key) => ({
 		params: { pid: key },
 	}));
