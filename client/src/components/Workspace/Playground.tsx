@@ -13,6 +13,7 @@ import { toast } from "react-toastify";
 import { problems } from "@/utils/problems";
 import { arrayUnion, doc, updateDoc } from "firebase/firestore";
 import { vim } from "@replit/codemirror-vim";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
 
 interface PlaygroundProps {
 	problem: Problem;
@@ -45,10 +46,15 @@ export default function Playground({
 	setData,
 	data,
 }: PlaygroundProps) {
+	// const [fontSize, setFontSize] = useLocalStorage("lcc-fontSize", "16px");
+	// const [keyBindings, setKeyBindings] = useLocalStorage(
+	// 	"lcc-keyBindings",
+	// 	"standard"
+	// );
+
 	const [activeTestCaseId, setActiveTestCaseId] = useState(0);
 	const [userCode, setUserCode] = useState(problem.starterCode);
 	const [user] = useAuthState(auth);
-	const [extensions, setExtensions] = useState<any>([langs.tsx()]);
 
 	const [settings, setSettings] = useState<ISettings>({
 		fontSize: "16px",
@@ -57,6 +63,14 @@ export default function Playground({
 		dropDownIsOpen: false,
 		dropDownId: "fontSize",
 	});
+
+	// useEffect(() => {
+	// 	setFontSize(settings.fontSize);
+	// }, [settings.fontSize, setFontSize]);
+
+	// useEffect(() => {
+	// 	setKeyBindings(settings.keyBinding);
+	// }, [settings.keyBinding, setKeyBindings]);
 
 	const handleSubmit = async () => {
 		if (!user) {
@@ -99,11 +113,6 @@ export default function Playground({
 	};
 
 	useEffect(() => {
-		if (settings.keyBinding === "vim") setExtensions([...extensions, vim()]);
-		else setExtensions([langs.tsx()]);
-	}, [settings.keyBinding, extensions]);
-
-	useEffect(() => {
 		const code = localStorage.getItem(`code-${problem.id}`);
 
 		setUserCode(code && user ? JSON.parse(code) : problem.starterCode);
@@ -130,7 +139,10 @@ export default function Playground({
 						value={userCode}
 						theme={vscodeDark}
 						onChange={onChange}
-						extensions={extensions}
+						extensions={[
+							langs.tsx(),
+							...(settings.keyBinding === "vim" ? [vim()] : []),
+						]}
 						style={{ fontSize: settings.fontSize }}
 					/>
 				</div>

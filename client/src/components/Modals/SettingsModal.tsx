@@ -68,7 +68,7 @@ export default function SettingsModal({
 							<div className="mt-6 flex justify-between first:mt-0">
 								<div className="w-[340px]">
 									<h3 className=" text-base font-medium">Font size</h3>
-									<h3 className="text-label-3  mt-1.5">
+									<h3 className="text-label-3 mt-1.5 text-sm">
 										Choose your preferred font size for the code editor.
 									</h3>
 								</div>
@@ -116,7 +116,7 @@ export default function SettingsModal({
 							<div className="mt-6 flex justify-between first:mt-0">
 								<div className="w-[340px]">
 									<h3 className=" text-base font-medium">Key Bindings</h3>
-									<h3 className="text-label-3  mt-1.5">
+									<h3 className="text-label-3 mt-1.5 text-sm">
 										Choose your preferred key bindings for the code editor.
 									</h3>
 								</div>
