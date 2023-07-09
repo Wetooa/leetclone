@@ -18,12 +18,14 @@ const EDITOR_FONT_SIZES = [
 	"18px",
 ];
 
+const EDITOR_KEY_BINDINGS = ["standard", "vim"];
+
 export default function SettingsModal({
 	settings,
 	setSettings,
 }: SettingsModalProps) {
-	const handleClick = (fontSize: string) => {
-		setSettings({ ...settings, fontSize });
+	const handleClick = (id: string, option: string) => {
+		setSettings({ ...settings, [id]: option, dropDownIsOpen: false });
 	};
 
 	return (
@@ -77,6 +79,7 @@ export default function SettingsModal({
 												setSettings({
 													...settings,
 													dropDownIsOpen: !settings.dropDownIsOpen,
+													dropDownId: "fontSize",
 												});
 											}}
 											className="flex cursor-pointer items-center rounded px-3 py-1.5 text-left focus:outline-none whitespace-nowrap bg bg-dark-fill-3 hover:bg-dark-fill-2 active:bg-dark-fill-3 w-full justify-between"
@@ -86,24 +89,74 @@ export default function SettingsModal({
 											<BsChevronDown />
 										</button>
 										{/* Show dropdown for fontsizes */}
-										{settings.dropDownIsOpen && (
-											<ul
-												className="absolute mt-1 max-h-56 overflow-auto rounded-lg p-2 z-50 focus:outline-none shadow-lg   w-full bg-dark-layer-1"
-												style={{
-													filter:
-														"drop-shadow(rgba(0, 0, 0, 0.04) 0px 1px 3px) drop-shadow(rgba(0, 0, 0, 0.12) 0px 6px 16px)",
-												}}
-											>
-												{EDITOR_FONT_SIZES.map((fontSize, idx) => (
-													<SettingsListItem
-														key={idx}
-														fontSize={fontSize}
-														selectedOption={settings.fontSize}
-														handleClick={handleClick}
-													/>
-												))}
-											</ul>
-										)}
+										{settings.dropDownIsOpen &&
+											settings.dropDownId === "fontSize" && (
+												<ul
+													className="absolute mt-1 max-h-56 overflow-auto rounded-lg p-2 z-50 focus:outline-none shadow-lg   w-full bg-dark-layer-1"
+													style={{
+														filter:
+															"drop-shadow(rgba(0, 0, 0, 0.04) 0px 1px 3px) drop-shadow(rgba(0, 0, 0, 0.12) 0px 6px 16px)",
+													}}
+												>
+													{EDITOR_FONT_SIZES.map((fontSize, idx) => (
+														<SettingsListItem
+															key={idx}
+															option={fontSize}
+															selectedOption={settings.fontSize}
+															handleClick={handleClick}
+															id="fontSize"
+														/>
+													))}
+												</ul>
+											)}
+									</div>
+								</div>
+							</div>
+
+							<div className="mt-6 flex justify-between first:mt-0">
+								<div className="w-[340px]">
+									<h3 className=" text-base font-medium">Key Bindings</h3>
+									<h3 className="text-label-3  mt-1.5">
+										Choose your preferred key bindings for the code editor.
+									</h3>
+								</div>
+								<div className="w-[170px]">
+									<div className="relative">
+										<button
+											onClick={() => {
+												setSettings({
+													...settings,
+													dropDownIsOpen: !settings.dropDownIsOpen,
+													dropDownId: "keyBindings",
+												});
+											}}
+											className="flex cursor-pointer items-center rounded px-3 py-1.5 text-left focus:outline-none whitespace-nowrap bg bg-dark-fill-3 hover:bg-dark-fill-2 active:bg-dark-fill-3 w-full justify-between"
+											type="button"
+										>
+											{settings.keyBinding}
+											<BsChevronDown />
+										</button>
+										{/* Show dropdown for fontsizes */}
+										{settings.dropDownIsOpen &&
+											settings.dropDownId === "keyBindings" && (
+												<ul
+													className="absolute mt-1 max-h-56 overflow-auto rounded-lg p-2 z-50 focus:outline-none shadow-lg   w-full bg-dark-layer-1"
+													style={{
+														filter:
+															"drop-shadow(rgba(0, 0, 0, 0.04) 0px 1px 3px) drop-shadow(rgba(0, 0, 0, 0.12) 0px 6px 16px)",
+													}}
+												>
+													{EDITOR_KEY_BINDINGS.map((keyBinding, idx) => (
+														<SettingsListItem
+															key={idx}
+															option={keyBinding}
+															selectedOption={settings.keyBinding}
+															handleClick={handleClick}
+															id="keyBinding"
+														/>
+													))}
+												</ul>
+											)}
 									</div>
 								</div>
 							</div>
@@ -116,31 +169,33 @@ export default function SettingsModal({
 }
 
 interface SettingsListItemProps {
-	fontSize: string;
+	option: string;
+	id: string;
 	selectedOption: string;
-	handleClick: (fontSize: string) => void;
+	handleClick: (id: string, fontSize: string) => void;
 }
 
 const SettingsListItem: React.FC<SettingsListItemProps> = ({
-	fontSize,
+	option,
 	selectedOption,
 	handleClick,
+	id,
 }) => {
 	return (
 		<li
-			onClick={() => handleClick(fontSize)}
+			onClick={() => handleClick(id, option)}
 			className="relative flex h-8 cursor-pointer select-none py-1.5 pl-2 text-label-2 dark:text-dark-label-2 hover:bg-dark-fill-3 rounded-lg"
 		>
 			<div
 				className={`flex h-5 flex-1 items-center pr-2 ${
-					selectedOption === fontSize ? "font-medium" : ""
+					selectedOption === option ? "font-medium" : ""
 				}`}
 			>
-				<div className="whitespace-nowrap">{fontSize}</div>
+				<div className="whitespace-nowrap">{option}</div>
 			</div>
 			<span
 				className={`text-blue dark:text-dark-blue flex items-center pr-2 ${
-					selectedOption === fontSize ? "visible" : "invisible"
+					selectedOption === option ? "visible" : "invisible"
 				}`}
 			>
 				<BsCheckLg />

@@ -33,8 +33,10 @@ interface PlaygroundProps {
 
 export interface ISettings {
 	fontSize: string;
+	keyBinding: "standard" | "vim";
 	settingsModalIsOpen: boolean;
 	dropDownIsOpen: boolean;
+	dropDownId: "fontSize" | "keyBindings";
 }
 
 export default function Playground({
@@ -46,11 +48,14 @@ export default function Playground({
 	const [activeTestCaseId, setActiveTestCaseId] = useState(0);
 	const [userCode, setUserCode] = useState(problem.starterCode);
 	const [user] = useAuthState(auth);
+	const [extensions, setExtensions] = useState<any>([langs.tsx()]);
 
 	const [settings, setSettings] = useState<ISettings>({
 		fontSize: "16px",
+		keyBinding: "standard",
 		settingsModalIsOpen: false,
 		dropDownIsOpen: false,
+		dropDownId: "fontSize",
 	});
 
 	const handleSubmit = async () => {
@@ -94,6 +99,11 @@ export default function Playground({
 	};
 
 	useEffect(() => {
+		if (settings.keyBinding === "vim") setExtensions([...extensions, vim()]);
+		else setExtensions([langs.tsx()]);
+	}, [settings.keyBinding, extensions]);
+
+	useEffect(() => {
 		const code = localStorage.getItem(`code-${problem.id}`);
 
 		setUserCode(code && user ? JSON.parse(code) : problem.starterCode);
@@ -120,7 +130,7 @@ export default function Playground({
 						value={userCode}
 						theme={vscodeDark}
 						onChange={onChange}
-						extensions={[langs.tsx(), vim()]}
+						extensions={extensions}
 						style={{ fontSize: settings.fontSize }}
 					/>
 				</div>
