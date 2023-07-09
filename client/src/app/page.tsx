@@ -28,7 +28,7 @@ export default function Home() {
 			</h1>
 			<div className="relative overflow-x-auto mx-auto px-6 pb-10">
 				{loadingProblems && (
-					<div className="animate-pulse max-w-[1200px] mx-auto mb-10">
+					<div className="animate-pulse flex flex-col items-center mx-auto mb-10">
 						{[...Array(20)].map((_, index) => {
 							return <LoadingSkeleton key={index} />;
 						})}
