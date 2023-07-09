@@ -2,13 +2,13 @@
 
 import ProblemsTable from "@/components/ProblemsTable/ProblemsTable";
 import Topbar from "@/components/Topbar/Topbar";
-import { useHasMoundted } from "@/hooks/useHasMounted";
+import { useHasMounted } from "@/hooks/useHasMounted";
 import { useState } from "react";
 
 export default function Home() {
 	const [loadingProblems, setLoadingProblems] = useState(true);
 
-	const hasMounted = useHasMoundted();
+	const hasMounted = useHasMounted();
 	if (!hasMounted) return null;
 
 	return (

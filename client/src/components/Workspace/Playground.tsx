@@ -5,39 +5,68 @@ import { langs } from "@uiw/codemirror-extensions-langs";
 import PreferenceNav from "./PreferenceNav/PreferenceNav";
 import EditorFooter from "./EditorFooter";
 import { Problem } from "@/utils/types/problem";
-import { Dispatch, useEffect, useRef, useState } from "react";
+import { Dispatch, useEffect, useState } from "react";
 import { useAuthState } from "react-firebase-hooks/auth";
-import { auth } from "@/firebase/firebase";
+import { auth, firestore } from "@/firebase/firebase";
 import { defaultToastConfig } from "@/utils/toastConfig";
 import { toast } from "react-toastify";
 import { problems } from "@/utils/problems";
+import { arrayUnion, doc, updateDoc } from "firebase/firestore";
+import { vim } from "@replit/codemirror-vim";
 
 interface PlaygroundProps {
 	problem: Problem;
 	setSuccess: Dispatch<boolean>;
+	data: {
+		liked: boolean;
+		disliked: boolean;
+		starred: boolean;
+		solved: boolean;
+	};
+	setData: Dispatch<{
+		liked: boolean;
+		disliked: boolean;
+		starred: boolean;
+		solved: boolean;
+	}>;
 }
 
-export default function Playground({ problem, setSuccess }: PlaygroundProps) {
+export default function Playground({
+	problem,
+	setSuccess,
+	setData,
+	data,
+}: PlaygroundProps) {
 	const [activeTestCaseId, setActiveTestCaseId] = useState(0);
 	const [userCode, setUserCode] = useState(problem.starterCode);
 	const [user] = useAuthState(auth);
 
-	const handleSubmit = () => {
+	const handleSubmit = async () => {
 		if (!user) {
 			toast.error("Please log in to submit your code", defaultToastConfig);
 			return;
 		}
 
 		try {
-			const cb = new Function(`return ${userCode}`)();
-			const success = problems[problem.id].handlerFunction(cb);
+			const realUserCode = userCode.slice(
+				userCode.indexOf(problem.starterFunctionName)
+			);
+			const cb = new Function(`return ${realUserCode}`)();
+			const handlerFunction = problems[problem.id].handlerFunction as (
+				fn: any
+			) => boolean;
+			const success = handlerFunction(cb);
 
 			if (success) {
 				toast.success("All testcases passed!", defaultToastConfig);
 				setSuccess(true);
 				setTimeout(setSuccess, 4000, false);
-			} else {
-				toast.error("There was an error in your code!", defaultToastConfig);
+
+				const userRef = doc(firestore, "users", user.uid);
+				await updateDoc(userRef, {
+					solvedProblems: arrayUnion(problem.id),
+				});
+				setData({ ...data, solved: true });
 			}
 		} catch (error: any) {
 			if (
@@ -50,8 +79,16 @@ export default function Playground({ problem, setSuccess }: PlaygroundProps) {
 		}
 	};
 
+	useEffect(() => {
+		const code = localStorage.getItem(`code-${problem.id}`);
+
+		setUserCode(code && user ? JSON.parse(code) : problem.starterCode);
+	}, [user, problem]);
+
 	const onChange = (value: string) => {
 		setUserCode(value);
+
+		localStorage.setItem(`code-${problem.id}`, JSON.stringify(value));
 	};
 
 	return (
@@ -69,7 +106,7 @@ export default function Playground({ problem, setSuccess }: PlaygroundProps) {
 						value={userCode}
 						theme={vscodeDark}
 						onChange={onChange}
-						extensions={[langs.tsx()]}
+						extensions={[langs.tsx(), vim()]}
 						style={{ fontSize: 16 }}
 					/>
 				</div>
