@@ -5,39 +5,101 @@ import { langs } from "@uiw/codemirror-extensions-langs";
 import PreferenceNav from "./PreferenceNav/PreferenceNav";
 import EditorFooter from "./EditorFooter";
 import { Problem } from "@/utils/types/problem";
-import { Dispatch, useEffect, useRef, useState } from "react";
+import { Dispatch, useEffect, useState } from "react";
 import { useAuthState } from "react-firebase-hooks/auth";
-import { auth } from "@/firebase/firebase";
+import { auth, firestore } from "@/firebase/firebase";
 import { defaultToastConfig } from "@/utils/toastConfig";
 import { toast } from "react-toastify";
 import { problems } from "@/utils/problems";
+import { arrayUnion, doc, updateDoc } from "firebase/firestore";
+import { vim } from "@replit/codemirror-vim";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
 
 interface PlaygroundProps {
 	problem: Problem;
 	setSuccess: Dispatch<boolean>;
+	data: {
+		liked: boolean;
+		disliked: boolean;
+		starred: boolean;
+		solved: boolean;
+	};
+	setData: Dispatch<{
+		liked: boolean;
+		disliked: boolean;
+		starred: boolean;
+		solved: boolean;
+	}>;
 }
 
-export default function Playground({ problem, setSuccess }: PlaygroundProps) {
+export interface ISettings {
+	fontSize: string;
+	keyBinding: "standard" | "vim";
+	settingsModalIsOpen: boolean;
+	dropDownIsOpen: boolean;
+	dropDownId: "fontSize" | "keyBindings";
+}
+
+export default function Playground({
+	problem,
+	setSuccess,
+	setData,
+	data,
+}: PlaygroundProps) {
+	const [fontSize, setFontSize] = useLocalStorage("lcc-fontSize", "16px");
+	const [keyBindings, setKeyBindings] = useLocalStorage(
+		"lcc-keyBindings",
+		"standard"
+	);
+
 	const [activeTestCaseId, setActiveTestCaseId] = useState(0);
 	const [userCode, setUserCode] = useState(problem.starterCode);
 	const [user] = useAuthState(auth);
 
-	const handleSubmit = () => {
+	const [settings, setSettings] = useState<ISettings>({
+		fontSize: fontSize,
+		keyBinding: keyBindings,
+		settingsModalIsOpen: false,
+		dropDownIsOpen: false,
+		dropDownId: "fontSize",
+	});
+
+	useEffect(() => {
+		setFontSize(settings.fontSize);
+	}, [settings.fontSize, setFontSize]);
+
+	useEffect(() => {
+		setKeyBindings(settings.keyBinding);
+	}, [settings.keyBinding, setKeyBindings]);
+
+	const handleSubmit = async () => {
 		if (!user) {
 			toast.error("Please log in to submit your code", defaultToastConfig);
 			return;
 		}
 
 		try {
-			const cb = new Function(`return ${userCode}`)();
-			const success = problems[problem.id].handlerFunction(cb);
+			const realUserCode = userCode.slice(
+				userCode.indexOf(problem.starterFunctionName)
+			);
+			const cb = new Function(`return ${realUserCode}`)();
+			const handlerFunction = problems[problem.id].handlerFunction;
+
+			if (typeof handlerFunction !== "function")
+				throw new Error("HandlerFunction must be a function!");
+
+			const success = handlerFunction(cb);
 
 			if (success) {
 				toast.success("All testcases passed!", defaultToastConfig);
 				setSuccess(true);
 				setTimeout(setSuccess, 4000, false);
-			} else {
-				toast.error("There was an error in your code!", defaultToastConfig);
+
+				const userRef = doc(firestore, "users", user.uid);
+				await updateDoc(userRef, {
+					solvedProblems: arrayUnion(problem.id),
+				});
+				setData({ ...data, solved: true });
 			}
 		} catch (error: any) {
 			if (
@@ -50,13 +112,21 @@ export default function Playground({ problem, setSuccess }: PlaygroundProps) {
 		}
 	};
 
+	useEffect(() => {
+		const code = localStorage.getItem(`code-${problem.id}`);
+
+		setUserCode(code && user ? JSON.parse(code) : problem.starterCode);
+	}, [user, problem]);
+
 	const onChange = (value: string) => {
 		setUserCode(value);
+
+		localStorage.setItem(`code-${problem.id}`, JSON.stringify(value));
 	};
 
 	return (
 		<div className="bg-dark-layer-1 flex flex-col relative overflow-x-hidden">
-			<PreferenceNav />
+			<PreferenceNav settings={settings} setSettings={setSettings} />
 
 			<Split
 				className="h-[calc(100vh-94px)]"
@@ -69,8 +139,11 @@ export default function Playground({ problem, setSuccess }: PlaygroundProps) {
 						value={userCode}
 						theme={vscodeDark}
 						onChange={onChange}
-						extensions={[langs.tsx()]}
-						style={{ fontSize: 16 }}
+						extensions={[
+							langs.tsx(),
+							...(settings.keyBinding === "vim" ? [vim()] : []),
+						]}
+						style={{ fontSize: settings.fontSize }}
 					/>
 				</div>
 

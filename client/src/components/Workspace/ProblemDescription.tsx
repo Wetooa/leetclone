@@ -1,8 +1,6 @@
-import Image from "next/image";
 import { auth, firestore } from "@/firebase/firebase";
 import { DBProblem, DBUser, Problem } from "@/utils/types/problem";
 import {
-	Transaction,
 	arrayRemove,
 	arrayUnion,
 	doc,
@@ -10,7 +8,7 @@ import {
 	runTransaction,
 	updateDoc,
 } from "firebase/firestore";
-import { useEffect, useState } from "react";
+import { Dispatch, useState } from "react";
 import {
 	AiFillLike,
 	AiFillDislike,
@@ -23,20 +21,41 @@ import RectangleSkeleton from "../Skeleton/RectangleSkeleton";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { toast } from "react-toastify";
 import { defaultToastConfig } from "@/utils/toastConfig";
+import { useGetCurrentProblem } from "@/hooks/useGetCurrentProblem";
+import { useGetUsersDataOnProblem } from "@/hooks/useGetUsersDataOnProblem";
+import { returnUserDataAndProblemData } from "@/utils/funcs";
+import ProblemExample from "./ProblemDescription/ProblemExample";
+import ProblemStatement from "./ProblemDescription/ProblemStatement";
+import ProblemConstraints from "./ProblemDescription/ProblemConstraints";
 
 interface ProblemDescriptionProps {
 	problem: Problem;
+	data: {
+		liked: boolean;
+		disliked: boolean;
+		starred: boolean;
+		solved: boolean;
+	};
+	setData: Dispatch<{
+		liked: boolean;
+		disliked: boolean;
+		starred: boolean;
+		solved: boolean;
+	}>;
 }
 
 export default function ProblemDescription({
 	problem,
+	data,
+	setData,
 }: ProblemDescriptionProps) {
 	const { currentProblem, loading, setCurrentProblem } = useGetCurrentProblem(
 		problem.id
 	);
 	const [user] = useAuthState(auth);
-	const { liked, disliked, solved, starred, setData } =
-		useGetUsersDataOnProblem(problem.id);
+	const { liked, disliked, starred, solved } = data;
+	useGetUsersDataOnProblem(problem.id, setData);
+
 	const [updating, setUpdating] = useState(false);
 
 	const problemDifficultyClass: { [key: string]: string } = {
@@ -44,16 +63,6 @@ export default function ProblemDescription({
 		Medium: "bg-dark-yellow text-dark-yellow",
 		Hard: "bg-dark-pink text-dark-pink",
 	};
-
-	async function returnUserDataAndProblemData(transaction: Transaction) {
-		const userRef = doc(firestore, "users", user!.uid);
-		const problemRef = doc(firestore, "problems", problem.id);
-
-		const userDoc = await transaction.get(userRef);
-		const problemDoc = await transaction.get(problemRef);
-
-		return { userRef, userDoc, problemRef, problemDoc };
-	}
 
 	async function handleDislike() {
 		if (!user) {
@@ -69,7 +78,7 @@ export default function ProblemDescription({
 
 		await runTransaction(firestore, async (transaction) => {
 			const { userRef, userDoc, problemRef, problemDoc } =
-				await returnUserDataAndProblemData(transaction);
+				await returnUserDataAndProblemData(transaction, user.uid, problem.id);
 
 			if (!userDoc.exists() || !problemDoc.exists()) return;
 
@@ -88,7 +97,7 @@ export default function ProblemDescription({
 					...prev!,
 					dislikes: prev!.dislikes - 1,
 				}));
-				setData((prev) => ({ ...prev, disliked: false }));
+				setData({ ...data, disliked: false });
 			} else {
 				transaction.update(userRef, {
 					dislikedProblems: [
@@ -110,7 +119,7 @@ export default function ProblemDescription({
 					likes: prev!.likes - (liked ? 1 : 0),
 					dislikes: prev!.dislikes + 1,
 				}));
-				setData((prev) => ({ ...prev, liked: false, disliked: true }));
+				setData({ ...data, liked: false, disliked: true });
 			}
 		});
 
@@ -131,7 +140,7 @@ export default function ProblemDescription({
 
 		await runTransaction(firestore, async (transaction) => {
 			const { userRef, userDoc, problemRef, problemDoc } =
-				await returnUserDataAndProblemData(transaction);
+				await returnUserDataAndProblemData(transaction, user.uid, problem.id);
 
 			if (!userDoc.exists() || !problemDoc.exists()) return;
 
@@ -147,7 +156,7 @@ export default function ProblemDescription({
 				});
 
 				setCurrentProblem((prev) => ({ ...prev!, likes: prev!.likes - 1 }));
-				setData((prev) => ({ ...prev, liked: false }));
+				setData({ ...data, liked: false });
 			} else {
 				transaction.update(userRef, {
 					likedProblems: [
@@ -170,7 +179,7 @@ export default function ProblemDescription({
 					likes: prev!.likes + 1,
 					dislikes: prev!.dislikes - (disliked ? 1 : 0),
 				}));
-				setData((prev) => ({ ...prev, liked: true, disliked: false }));
+				setData({ ...data, liked: true, disliked: false });
 			}
 		});
 
@@ -199,13 +208,13 @@ export default function ProblemDescription({
 				starredProblems: arrayRemove(problem.id),
 			});
 
-			setData((prev) => ({ ...prev, starred: false }));
+			setData({ ...data, starred: false });
 		} else {
 			updateDoc(userRef, {
 				starredProblems: arrayUnion(problem.id),
 			});
 
-			setData((prev) => ({ ...prev, starred: true }));
+			setData({ ...data, starred: true });
 		}
 
 		setUpdating(false);
@@ -298,134 +307,12 @@ export default function ProblemDescription({
 							</div>
 						)}
 
-						<div className="text-white text-sm">
-							<div
-								dangerouslySetInnerHTML={{ __html: problem.problemStatement }}
-							/>
-						</div>
-
-						<div className="mt-4">
-							{problem.examples.map((example, index) => {
-								return (
-									<div key={example.id}>
-										<p className="font-medium text-white mb-2">
-											Example {index + 1}:{" "}
-										</p>
-
-										{example.img && (
-											<Image
-												src={example.img}
-												width={500}
-												height={500}
-												alt={"Image Example " + (index + 1)}
-											/>
-										)}
-										<div className="example-card">
-											<pre>
-												<p>
-													<strong className="text-white">Input: </strong>
-													{example.inputText}
-													<br />
-												</p>
-
-												<p>
-													<strong>Output: </strong>
-													{example.outputText}
-													<br />
-												</p>
-
-												{example.explanation && (
-													<p>
-														<strong>Explanation: </strong>
-														{example.explanation}
-													</p>
-												)}
-											</pre>
-										</div>
-									</div>
-								);
-							})}
-						</div>
-
-						<div className="my-5 text-sm pb-4">
-							<div className="text-white font-medium">Constraints:</div>
-							<ul className="text-white ml-5 list-disc">
-								<div
-									dangerouslySetInnerHTML={{
-										__html: problem.constraints,
-									}}
-								/>
-							</ul>
-						</div>
+						<ProblemStatement problem={problem} />
+						<ProblemExample problem={problem} />
+						<ProblemConstraints problem={problem} />
 					</div>
 				</div>
 			</div>
 		</div>
 	);
-}
-
-function useGetCurrentProblem(problemId: string) {
-	const [currentProblem, setCurrentProblem] = useState<DBProblem>();
-	const [loading, setLoading] = useState(true);
-
-	useEffect(() => {
-		const getCurrentProblem = async () => {
-			setLoading(true);
-
-			const docRef = doc(firestore, "problems", problemId);
-			const docSnap = await getDoc(docRef);
-
-			if (docSnap.exists()) {
-				const problem = docSnap.data();
-
-				setCurrentProblem({ id: docSnap.id, ...problem } as DBProblem);
-			}
-
-			setLoading(false);
-		};
-
-		getCurrentProblem();
-	}, [problemId]);
-
-	return { currentProblem, loading, setCurrentProblem };
-}
-
-function useGetUsersDataOnProblem(problemId: string) {
-	const [data, setData] = useState({
-		liked: false,
-		disliked: false,
-		starred: false,
-		solved: false,
-	});
-	const [user] = useAuthState(auth);
-
-	useEffect(() => {
-		const getUsersDataOnProblem = async () => {
-			const userRef = doc(firestore, "users", user!.uid);
-			const userSnap = await getDoc(userRef);
-
-			if (userSnap.exists()) {
-				const data = userSnap.data() as DBUser;
-				const {
-					solvedProblems,
-					likedProblems,
-					dislikedProblems,
-					starredProblems,
-				} = data;
-
-				setData({
-					liked: likedProblems.includes(problemId),
-					disliked: dislikedProblems.includes(problemId),
-					starred: starredProblems.includes(problemId),
-					solved: solvedProblems.includes(problemId),
-				});
-			}
-		};
-
-		if (user) getUsersDataOnProblem();
-		return () =>
-			setData({ liked: false, disliked: false, starred: false, solved: false });
-	}, [problemId, user]);
-
-	return { ...data, setData };
 }

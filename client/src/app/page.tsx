@@ -2,13 +2,18 @@
 
 import ProblemsTable from "@/components/ProblemsTable/ProblemsTable";
 import Topbar from "@/components/Topbar/Topbar";
-import { useHasMoundted } from "@/hooks/useHasMounted";
-import { useState } from "react";
+import { auth, firestore } from "@/firebase/firebase";
+import { useHasMounted } from "@/hooks/useHasMounted";
+import { DBUser } from "@/utils/types/problem";
+import { doc, getDoc } from "firebase/firestore";
+import { useEffect, useState } from "react";
+import { useAuthState } from "react-firebase-hooks/auth";
 
 export default function Home() {
 	const [loadingProblems, setLoadingProblems] = useState(true);
+	const solvedProblems = useGetSolvedProblems();
 
-	const hasMounted = useHasMoundted();
+	const hasMounted = useHasMounted();
 	if (!hasMounted) return null;
 
 	return (
@@ -24,7 +29,7 @@ export default function Home() {
 			<div className="relative overflow-x-auto mx-auto px-6 pb-10">
 				{loadingProblems && (
 					<div className="animate-pulse max-w-[1200px] mx-auto mb-10">
-						{[...Array(10)].map((_, index) => {
+						{[...Array(20)].map((_, index) => {
 							return <LoadingSkeleton key={index} />;
 						})}
 					</div>
@@ -53,7 +58,10 @@ export default function Home() {
 						</thead>
 					)}
 
-					<ProblemsTable setLoadingProblems={setLoadingProblems} />
+					<ProblemsTable
+						setLoadingProblems={setLoadingProblems}
+						solvedProblems={solvedProblems}
+					/>
 				</table>
 			</div>
 
@@ -73,3 +81,25 @@ const LoadingSkeleton = () => {
 		</div>
 	);
 };
+
+function useGetSolvedProblems() {
+	const [solvedProblems, setsolvedProblems] = useState<string[]>([]);
+	const [user] = useAuthState(auth);
+
+	useEffect(() => {
+		const getSolvedProblems = async () => {
+			if (!user) return;
+
+			const userRef = doc(firestore, "users", user.uid);
+			const userDoc = await getDoc(userRef);
+
+			if (userDoc.exists()) {
+				setsolvedProblems((userDoc.data() as DBUser).solvedProblems);
+			}
+		};
+
+		getSolvedProblems();
+	}, [user]);
+
+	return solvedProblems;
+}
