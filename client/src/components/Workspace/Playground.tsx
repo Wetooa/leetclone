@@ -52,9 +52,11 @@ export default function Playground({
 				userCode.indexOf(problem.starterFunctionName)
 			);
 			const cb = new Function(`return ${realUserCode}`)();
-			const handlerFunction = problems[problem.id].handlerFunction as (
-				fn: any
-			) => boolean;
+			const handlerFunction = problems[problem.id].handlerFunction;
+
+			if (typeof handlerFunction !== "function")
+				throw new Error("HandlerFunction must be a function!");
+
 			const success = handlerFunction(cb);
 
 			if (success) {
