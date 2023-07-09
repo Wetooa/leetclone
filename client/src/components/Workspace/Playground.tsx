@@ -121,7 +121,7 @@ export default function Playground({
 	const onChange = (value: string) => {
 		setUserCode(value);
 
-		localStorage.setItem(`code-${problem.id}`, JSON.stringify(value));
+		if (user) localStorage.setItem(`code-${problem.id}`, JSON.stringify(value));
 	};
 
 	return (
