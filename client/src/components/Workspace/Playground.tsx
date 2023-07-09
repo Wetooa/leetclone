@@ -31,6 +31,12 @@ interface PlaygroundProps {
 	}>;
 }
 
+export interface ISettings {
+	fontSize: string;
+	settingsModalIsOpen: boolean;
+	dropDownIsOpen: boolean;
+}
+
 export default function Playground({
 	problem,
 	setSuccess,
@@ -40,6 +46,12 @@ export default function Playground({
 	const [activeTestCaseId, setActiveTestCaseId] = useState(0);
 	const [userCode, setUserCode] = useState(problem.starterCode);
 	const [user] = useAuthState(auth);
+
+	const [settings, setSettings] = useState<ISettings>({
+		fontSize: "16px",
+		settingsModalIsOpen: false,
+		dropDownIsOpen: false,
+	});
 
 	const handleSubmit = async () => {
 		if (!user) {
@@ -95,7 +107,7 @@ export default function Playground({
 
 	return (
 		<div className="bg-dark-layer-1 flex flex-col relative overflow-x-hidden">
-			<PreferenceNav />
+			<PreferenceNav settings={settings} setSettings={setSettings} />
 
 			<Split
 				className="h-[calc(100vh-94px)]"
@@ -109,7 +121,7 @@ export default function Playground({
 						theme={vscodeDark}
 						onChange={onChange}
 						extensions={[langs.tsx(), vim()]}
-						style={{ fontSize: 16 }}
+						style={{ fontSize: settings.fontSize }}
 					/>
 				</div>
 

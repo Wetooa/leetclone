@@ -3,11 +3,19 @@ import {
 	AiOutlineFullscreenExit,
 	AiOutlineSetting,
 } from "react-icons/ai";
-import { useEffect, useState } from "react";
+import { Dispatch, useEffect, useState } from "react";
+import { ISettings } from "../Playground";
+import SettingsModal from "@/components/Modals/SettingsModal";
 
-interface PreferenceNavProps {}
+interface PreferenceNavProps {
+	settings: ISettings;
+	setSettings: Dispatch<ISettings>;
+}
 
-export default function PreferenceNav({}: PreferenceNavProps) {
+export default function PreferenceNav({
+	settings,
+	setSettings,
+}: PreferenceNavProps) {
 	const [isFullScreen, setIsFullScreen] = useState(false);
 	const handleFullScreen = () => {
 		if (isFullScreen) {
@@ -18,6 +26,24 @@ export default function PreferenceNav({}: PreferenceNavProps) {
 
 		setIsFullScreen(!isFullScreen);
 	};
+
+	useEffect(() => {
+		const closeModal = () => {
+			setSettings({
+				...settings,
+				settingsModalIsOpen: false,
+				dropDownIsOpen: false,
+			});
+		};
+
+		const settingsModalClose = (e: KeyboardEvent) => {
+			if (e.key === "Escape") closeModal();
+		};
+
+		window.addEventListener("keydown", settingsModalClose);
+
+		return () => window.removeEventListener("keydown", settingsModalClose);
+	}, [setSettings, settings]);
 
 	useEffect(() => {
 		function exitHandler(e: any) {
@@ -46,7 +72,15 @@ export default function PreferenceNav({}: PreferenceNavProps) {
 			</div>
 
 			<div className="flex items-center m-2">
-				<button className="preferenceBtn group">
+				<button
+					className="preferenceBtn group"
+					onClick={() =>
+						setSettings({
+							...settings,
+							settingsModalIsOpen: true,
+						})
+					}
+				>
 					<div className="h-4 w-4 text-dark-gray-6 font-bold text-lg">
 						<AiOutlineSetting />
 					</div>
@@ -61,9 +95,15 @@ export default function PreferenceNav({}: PreferenceNavProps) {
 							<AiOutlineFullscreenExit />
 						)}
 					</div>
-					<div className="preferenceBtn-tooltip">Full Screen</div>
+					<div className="preferenceBtn-tooltip">
+						{isFullScreen && "Exit "}FullScreen
+					</div>
 				</button>
 			</div>
+
+			{settings.settingsModalIsOpen && (
+				<SettingsModal settings={settings} setSettings={setSettings} />
+			)}
 		</div>
 	);
 }
